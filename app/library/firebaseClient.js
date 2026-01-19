@@ -2,7 +2,12 @@
 // Import the functions you need from the SDKs you need
 
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import {
+  getAuth,
+  GoogleAuthProvider, // 👈 Add this for google login
+  FacebookAuthProvider, // 👈 Add this for facebook login
+  GithubAuthProvider, // 👈 Add this for github login
+} from "firebase/auth";
 
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
@@ -25,6 +30,11 @@ const app =
 
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+export const facebookProvider = new FacebookAuthProvider();
+// 2. Add the email scope so we can save it to MongoDB
+facebookProvider.addScope("email");
+
+export const githubProvider = new GithubAuthProvider();
 
 // // Initialize Firebase
 // const app = initializeApp(firebaseConfig);
