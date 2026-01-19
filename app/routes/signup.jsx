@@ -2,7 +2,11 @@ import { Form, useFetcher } from "react-router";
 import { FcGoogle } from "react-icons/fc";
 import { FaFacebook } from "react-icons/fa";
 import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "../library/firebaseClient";
+import {
+  auth,
+  googleProvider,
+  facebookProvider,
+} from "../library/firebaseClient";
 
 export default function Home() {
   const fetcher = useFetcher();
