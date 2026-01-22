@@ -1,13 +1,19 @@
 import {
+  data,
   isRouteErrorResponse,
   Links,
   Meta,
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "react-router";
 
 import "./app.css";
+// import { getToast } from "../.server/session";
+import { Toaster, toast } from "sonner";
+import { useEffect } from "react";
+import { commitSession, getSession } from "../.server/session";
 
 export const links = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -22,7 +28,40 @@ export const links = () => [
   },
 ];
 
+export async function loader({ request }) {
+  let session = await getSession(request.headers.get("Cookie"));
+  let toastMessage = session.get("toastMessage");
+
+  return data(
+    { toastMessage },
+    {
+      headers: {
+        "Set-Cookie": await commitSession(session),
+      },
+    }
+  );
+}
+
 export function Layout({ children }) {
+  const { toastMessage } = useLoaderData();
+
+  useEffect(() => {
+    if (!toastMessage) {
+      return;
+    }
+    const { message, type } = toastMessage;
+
+    switch (type) {
+      case "success":
+        toast.success(message);
+        break;
+      case "error":
+        toast.error(message);
+        break;
+      default:
+        throw new Error(`${type} is not handled`);
+    }
+  }, [toastMessage]);
   return (
     <html lang="en">
       <head>
@@ -32,6 +71,8 @@ export function Layout({ children }) {
         <Links />
       </head>
       <body>
+        {/* You can use: top-left, top-center, top-right, bottom-left, bottom-center, bottom-right */}
+        <Toaster richColors closeButton position="top-center" />
         {children}
         <ScrollRestoration />
         <Scripts />
