@@ -1,34 +1,51 @@
-// ✅ CRITICAL: Ensure this is the SERVER/ADMIN SDK
+// ✅ Corrected Session Action
 import { adminAuth } from "../../.server/server";
-import { commitSession, getSession } from "../../.server/session";
-
+import {
+  commitSession,
+  getSession,
+  setSuccessMessage,
+} from "../../.server/session";
 import { redirect } from "react-router";
-import { updateUserByEmail } from "../../model/database";
+import { syncUserProfile } from "../../model/database"; // Use the sync helper
 
 export async function action({ request }) {
   const formData = await request.formData();
   const idToken = formData.get("idToken");
 
-  // 1. VERIFY
-  const decodedToken = await adminAuth.verifyIdToken(idToken);
-  console.log("log 1", decodedToken);
-  // 2. DESTRUCTURE - Pull the specific fields out of the verified token
-  const { uid, email, name, picture: avatar, email_verified } = decodedToken;
+  try {
+    // 1. VERIFY - Firebase Admin SDK checks if the token is legit
+    const decodedToken = await adminAuth.verifyIdToken(idToken);
+    console.log(decodedToken);
+    const { uid, email, name, picture: avatar } = decodedToken;
 
-  // 3. MANUAL SYNC - Save to MongoDB
-  const userData = { firebaseId: uid, name, avatar, email_verified };
-  const result = await updateUserByEmail(email, userData);
+    // 2. SYNC - Save profile to MongoDB (No passwords!)
+    await syncUserProfile(uid, email, {
+      name: name || email.split("@")[0],
+      avatar,
+    });
 
-  if (result.upsertedCount > 0) {
-    console.log("New user created in MongoDB!");
-  } else {
-    console.log("Existing user updated in MongoDB.");
+    // 3. SESSION
+    const session = await getSession(request.headers.get("Cookie"));
+    session.set("userId", uid);
+    setSuccessMessage(session, "Welcome to the app!");
+
+    // //  Fetch the full user from MongoDB to check their ROLE
+    // const dbUser = await findUserByFirebaseId(uid);
+    // if role-based routing done here eg
+    // if (dbUser?.role === "parent") {
+    //   return redirect("/parent/portal", {
+    //     headers: { "Set-Cookie": await commitSession(session) },
+    //   });
+    // }
+    // // Default redirect if no role is set yet
+    // return redirect("/onboarding", {
+    //   headers: { "Set-Cookie": await commitSession(session) },
+    // });
+
+    return redirect("/signup", {
+      headers: { "Set-Cookie": await commitSession(session) },
+    });
+  } catch (error) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
-  // 4. SESSION & REDIRECT
-  const session = await getSession(request.headers.get("Cookie"));
-  session.set("userId", decodedToken.uid);
-  console.log("log 2", decodedToken.uid);
-  return redirect("/", {
-    headers: { "Set-Cookie": await commitSession(session) },
-  });
 }
