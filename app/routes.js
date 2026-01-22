@@ -4,4 +4,5 @@ export default [
   index("routes/home.jsx"),
   route("signup", "routes/signup.jsx"),
   route("session", "routes/session.jsx"),
+  route("forgot-password", "routes/forgot-password.jsx"),
 ];
