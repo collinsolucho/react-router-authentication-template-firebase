@@ -1,84 +1,35 @@
-# Welcome to React Router!
+# 🛡️ Hybrid Auth Portal (React Router + Firebase + MongoDB)
 
-A modern, production-ready template for building full-stack React applications using React Router.
+A high-performance, secure authentication system using the **Hybrid Model**. This project decouples identity management (Firebase) from application data (MongoDB) to ensure maximum security and zero password liability.
 
-## Features
+## 🚀 The Architecture
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+This project uses a **Division of Labor** strategy:
 
-## Getting Started
+- **Firebase:** Acts as the "Security Guard" (Identity, Auth, Password Resets).
+- **MongoDB:** Acts as the "Librarian" (User Profiles, Roles, Business Logic).
+- **React Router:** Acts as the "Traffic Controller" (Server-side sessions and Role-based routing).
 
-### Installation
+## 🛠️ Tech Stack
 
-Install the dependencies:
+- **Framework:** React Router v7
+- **Auth (Client/Admin):** Firebase SDK & Firebase Admin SDK
+- **Database:** MongoDB Atlas
+- **Styling:** Tailwind CSS
 
-```bash
-npm install
+## ⚙️ Environment Variables
+
+Create a `.env` file in the root directory and add the following:
+
+```env
+# Firebase Client (Public)
+VITE_FIREBASE_API_KEY="your-api-key"
+VITE_FIREBASE_AUTH_DOMAIN="your-app.firebaseapp.com"
+VITE_FIREBASE_PROJECT_ID="your-project-id"
+
+# Firebase Admin (Secret - Server Side Only)
+FIREBASE_SERVICE_ACCOUNT='{"type": "service_account", "project_id": "...", "private_key": "..."}'
+
+# MongoDB
+MONGODB_URL="mongodb+srv://..."
 ```
-
-### Development
-
-Start the development server with HMR:
-
-```bash
-npm run dev
-```
-
-Your application will be available at `http://localhost:5173`.
-
-## Building for Production
-
-Create a production build:
-
-```bash
-npm run build
-```
-
-## Deployment
-
-### Docker Deployment
-
-To build and run using Docker:
-
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
-
----
-
-Built with ❤️ using React Router.

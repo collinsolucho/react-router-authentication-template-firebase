@@ -1,0 +1,67 @@
+=====================================================
+PROJECT: HYBRID AUTHENTICATION (FIREBASE + MONGODB)
+DATE: 2026-01-22
+=====================================================
+
+1. THE CORE PHILOSOPHY (DIVISION OF LABOR)
+-----------------------------------------------------
+* FIREBASE (The Security Guard): 
+  - Handles: Passwords, Password Resets, Social Logins, JWT Tokens.
+  - Why: Free email SMTP, high security, no manual hashing needed.
+  
+* MONGODB (The Librarian): 
+  - Handles: User Profiles, Roles (Teacher/Parent), Metadata.
+  - Why: Business logic lives here. No passwords stored here.
+  - Anchor: Linked to Firebase via the 'firebaseId' (UID).
+
+2. KEY PROJECT STRUCTURE
+-----------------------------------------------------
+/app
+  /.server/
+    - server.js       (Firebase Admin SDK / Master Key)
+    - session.js      (React Router Cookie Management)
+  /library/
+    - firebaseClient.js (Firebase Frontend SDK / API Keys)
+  /model/
+    - database.js     (MongoDB logic & syncUserProfile function)
+  /routes/
+    - _index.jsx      (Login Page - talks to Firebase first)
+    - signup.jsx      (Signup Page - talks to Firebase first)
+    - session.js      (The Bridge - Verifies tokens & redirects by Role)
+    - forgot-password (Triggers free Firebase reset email)
+
+3. THE "HYBRID" AUTH FLOW
+-----------------------------------------------------
+A. SIGNUP/LOGIN (Client Side):
+   1. User submits Email/Pass directly to Firebase SDK.
+   2. Firebase returns an 'idToken' (JWT).
+   3. Frontend submits { idToken } to '/session' via fetcher.
+
+B. VERIFICATION (Server Side Bridge):
+   1. '/session' action receives idToken.
+   2. Firebase Admin SDK verifies the token is valid.
+   3. Server extracts UID and Email from token.
+
+C. SYNC & REDIRECT:
+   1. Server calls 'syncUserProfile' in MongoDB (upsert: true).
+   2. Server fetches the user's 'role' from MongoDB.
+   3. Server creates Session Cookie and redirects:
+      - Role: 'teacher' -> /teacher/dashboard
+      - Role: 'parent'  -> /parent/portal
+      - No Role:        -> /onboarding
+
+4. PASSWORD RESET LOGIC
+-----------------------------------------------------
+1. User enters email.
+2. Server checks if email exists in MongoDB (safety check).
+3. If yes, Client triggers 'sendPasswordResetEmail(auth, email)'.
+4. User resets password on Firebase-hosted page.
+5. User logs in with NEW password. 
+6. Since MongoDB doesn't store passwords, nothing in the DB needs to change!
+
+5. SECURITY REMINDERS
+-----------------------------------------------------
+* NEVER store the 'FIREBASE_SERVICE_ACCOUNT' JSON in GitHub. Use .env.
+* NEVER store raw passwords in MongoDB.
+* ALWAYS use 'adminAuth.verifyIdToken' on the server to protect routes.
+* Authorized Domains: Ensure 'localhost' is added in Firebase Console.
