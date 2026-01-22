@@ -1,107 +1,83 @@
-import { Form, useFetcher } from "react-router";
-import { FcGoogle } from "react-icons/fc";
-import { FaFacebook } from "react-icons/fa";
-import { signInWithPopup } from "firebase/auth";
-import {
-  auth,
-  googleProvider,
-  facebookProvider,
-} from "../library/firebaseClient";
+import { useFetcher, Form } from "react-router";
+import { createUserWithEmailAndPassword } from "firebase/auth"; // Import this!
+import { auth } from "../library/firebaseClient"; // Import your client auth
+import { SocialAuth } from "../components/SocialAuth";
+import { validateUser } from "../functions/function";
+// moved function.js from .server since its used in client side
+import { toast } from "sonner";
 
-export default function Home() {
+export default function Signup() {
   const fetcher = useFetcher();
 
-  const handleSocialLogin = async (provider) => {
-    try {
-      // 1. Trigger the Firebase Popup
-      const result = await signInWithPopup(auth, provider);
+  // These errors now come from local validation or fetcher.data
+  const emailError = fetcher.data?.errors?.email;
+  const passwordError = fetcher.data?.errors?.password;
 
-      // 2. Get the secure ID Token (JWT)
-      const idToken = await result.user.getIdToken();
-      console.log(idToken);
-      // 3. Submit to your React Router action
-      fetcher.submit(
-        { idToken, intent: "social-auth" },
-        { method: "post", action: "/session" }
+  const handleEmailSignup = async (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get("email");
+    const password = formData.get("password");
+    console.log(password);
+    console.log(email);
+    // 1. Client-side Validate
+    const errors = validateUser(email, password);
+    if (errors) {
+      toast.error("Please fix form errors");
+      return;
+    }
+
+    try {
+      // 2. The Firebase "Birth"
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
       );
+      const idToken = await userCredential.user.getIdToken();
+
+      // 3. The Registration Bridge (Send to your /session route)
+      fetcher.submit({ idToken }, { method: "post", action: "/session" });
     } catch (error) {
-      console.error("Authentication failed:", error.code);
+      toast.error(error.message); // e.g., "Email already in use"
     }
   };
 
   return (
     <main className="max-w-6xl mx-auto p-20">
-      <h1 className="text-3xl font-bold">CREATE ACCOUNT</h1>
+      <h1 className="text-3xl font-bold uppercase">Create Account</h1>
 
-      {/* Standard Email/Password Form */}
-      <Form method="post" className="flex flex-col gap-5 mt-6">
-        {/* ... your email/password inputs remain the same ... */}
-        {/* EMAIL */}
-
+      {/* 🟢 Switch from method="post" to onSubmit */}
+      <Form onSubmit={handleEmailSignup} className="flex flex-col gap-5 mt-6">
         <div className="flex flex-col">
-          <label htmlFor="email" className="font-bold text-xl">
-            Email Address
-          </label>
-
-          <span className="text-sm text-red-500 italic">
-            Please enter a valid email
-          </span>
-
-          <input
-            type="email"
-            name="email"
-            id="email"
-            required
-            className="border-2 p-2 mt-2"
-            placeholder="example@email.com"
-          />
+          <label className="font-bold">Email Address</label>
+          {emailError && <span className="text-red-500">{emailError}</span>}
+          <input type="email" name="email" required className="border-2 p-2" />
         </div>
 
-        {/* PASSWORD */}
-
         <div className="flex flex-col">
-          <label htmlFor="password" className="font-bold text-xl">
-            Password
-          </label>
-
-          <span className="text-sm text-red-400 italic">
-            Minimum 8 characters
-          </span>
-
+          <label className="font-bold">Password</label>
+          {passwordError && (
+            <span className="text-red-500">{passwordError}</span>
+          )}
           <input
             type="password"
             name="password"
-            id="password"
             required
-            className="border-2 p-2 mt-2"
-            placeholder="Enter password"
+            className="border-2 p-2"
           />
         </div>
 
         <button
           type="submit"
-          className="border-2 p-2 rounded-lg font-bold hover:bg-black hover:text-white transition"
+          disabled={fetcher.state !== "idle"}
+          className="bg-black text-white p-3 rounded font-bold transition disabled:bg-gray-400"
         >
-          CREATE ACCOUNT
+          {fetcher.state !== "idle" ? "CREATING..." : "CREATE ACCOUNT"}
         </button>
       </Form>
 
-      {/* Updated Social Login Section */}
-      <div className="mt-6 flex gap-6">
-        <button
-          onClick={() => handleSocialLogin(googleProvider)}
-          className="flex items-center gap-2 border p-2 rounded hover:bg-gray-100 transition cursor-pointer"
-        >
-          <FcGoogle className="w-6 h-6" /> Google
-        </button>
-
-        <button
-          onClick={() => handleSocialLogin(facebookProvider)}
-          className="flex items-center gap-2 border p-2 rounded hover:bg-gray-100 transition cursor-pointer"
-        >
-          <FaFacebook className="w-6 h-6 text-blue-600" /> Facebook
-        </button>
-      </div>
+      <SocialAuth />
     </main>
   );
 }
